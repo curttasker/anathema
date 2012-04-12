@@ -9,6 +9,8 @@ import net.sf.anathema.character.generic.traits.types.AbilityType;
 import net.sf.anathema.character.library.trait.specialties.HighestSpecialty;
 import net.sf.anathema.character.lunar.beastform.BeastformTemplate;
 import net.sf.anathema.character.lunar.beastform.presenter.IBeastformModel;
+import net.sf.anathema.character.lunar.reporting.content.beastform.DBTCombatStatsContent;
+import net.sf.anathema.character.reporting.second.content.combat.CombatStatsContent;
 import net.sf.anathema.character.reporting.pdf.content.ReportSession;
 import net.sf.anathema.character.reporting.pdf.rendering.extent.Bounds;
 import net.sf.anathema.character.reporting.pdf.rendering.extent.Position;
@@ -16,6 +18,7 @@ import net.sf.anathema.character.reporting.pdf.rendering.general.LabelledValueEn
 import net.sf.anathema.character.reporting.pdf.rendering.general.box.ContentEncoder;
 import net.sf.anathema.character.reporting.pdf.rendering.graphics.SheetGraphics;
 import net.sf.anathema.lib.resources.IResources;
+
 
 public class SecondEditionDBTCombatEncoder implements ContentEncoder {
 
@@ -27,38 +30,17 @@ public class SecondEditionDBTCombatEncoder implements ContentEncoder {
 
   @Override
   public void encode(SheetGraphics graphics, ReportSession reportSession, Bounds bounds) {
-    String joinLabel = resources.getString("Sheet.Combat.JoinBattle"); //$NON-NLS-1$
-    String dodgeLabel = resources.getString("Sheet.Combat.DodgeDV"); //$NON-NLS-1$
-    String knockdownLabel = resources.getString("Sheet.Combat.Knockdown"); //$NON-NLS-1$
-    String stunningLabel = resources.getString("Sheet.Combat.Stunning"); //$NON-NLS-1$
-    IBeastformModel additionalModel = (IBeastformModel) reportSession.getCharacter().getAdditionalModel(BeastformTemplate.TEMPLATE_ID);
-    IGenericTraitCollection traitCollection = additionalModel.getBeastTraitCollection();
-    ICharacterType characterType = reportSession.getCharacter().getTemplate().getTemplateType().getCharacterType();
-    ICharacterStatsModifiers equipment = CharacterStatsModifiers.extractFromCharacter(reportSession.getCharacter());
-    HighestSpecialty dodgeSpecialty = new HighestSpecialty( reportSession.getCharacter(), AbilityType.Dodge );
-    
-    int joinBattle = CharacterUtilities.getJoinBattle(traitCollection, equipment);
-    int dodgeDV = CharacterUtilities.getDodgeDv(characterType, traitCollection, equipment);
-    int dodgeDVWithSpecialty = CharacterUtilities.getDodgeDvWithSpecialty(characterType, traitCollection, equipment, dodgeSpecialty.getValue());
-    int knockdownThreshold = CharacterUtilities.getKnockdownThreshold(traitCollection);
-    int knockdownPool = CharacterUtilities.getKnockdownPool(traitCollection);
-    int stunningThreshold = CharacterUtilities.getStunningThreshold(traitCollection);
-    int stunningPool = CharacterUtilities.getStunningPool(traitCollection);
-
-    String dodgeSpecialtyLabel = resources.getString("Sheet.Combat.NormalSpecialty") + dodgeSpecialty; //$NON-NLS-1$
-    String thresholdPoolLabel = resources.getString("Sheet.Combat.ThresholdPool"); //$NON-NLS-1$
+    DBTCombatStatsContent content = createContent(reportSession);
     Position upperLeftCorner = new Position(bounds.x, bounds.getMaxY());
     LabelledValueEncoder encoder = new LabelledValueEncoder(2, upperLeftCorner, bounds.width, 3);
-    encoder.addLabelledValue(graphics, 0, joinLabel, joinBattle);
-
-    displayDodgeWithSpecialty(graphics, encoder, dodgeLabel, dodgeDV, dodgeDVWithSpecialty, dodgeSpecialtyLabel);
+    encoder.addLabelledValue(graphics, 0, content.getJoinLabel(), content.getJoinBattle());
+    displayDodgeWithSpecialty(graphics, encoder, content);
     upperLeftCorner = new Position(bounds.x, bounds.getMaxY() - 25);
     encoder = new LabelledValueEncoder(2, upperLeftCorner, bounds.width, 3);
-
-    encoder.addLabelledValue(graphics, 0, knockdownLabel, knockdownThreshold, knockdownPool);
-    encoder.addLabelledValue(graphics, 1, stunningLabel, stunningThreshold, stunningPool);
-    encoder.addComment(graphics, thresholdPoolLabel, 0);
-    encoder.addComment(graphics, thresholdPoolLabel, 1);
+    encoder.addLabelledValue(graphics, 0, content.getKnockdownLabel(), content.getKnockdownThreshold(), content.getKnockdownPool());
+    encoder.addLabelledValue(graphics, 1, content.getStunningLabel(), content.getStunningThreshold(), content.getStunningPool());
+    encoder.addComment(graphics, content.getThresholdPoolLabel(), 0);
+    encoder.addComment(graphics, content.getThresholdPoolLabel(), 1);
   }
 
   @Override
@@ -71,12 +53,16 @@ public class SecondEditionDBTCombatEncoder implements ContentEncoder {
     return resources.getString("Sheet.Header.Lunar.WarForm.CombatValues");
   }
   
-  private void displayDodgeWithSpecialty( SheetGraphics graphics, LabelledValueEncoder encoder, String dodgeLabel, int dodgeDV, int dodgeDVWithSpecialty, String dodgeSpecialtyLabel ) {
-      if( dodgeDV != dodgeDVWithSpecialty ) {
-        encoder.addLabelledValue(graphics, 1, dodgeLabel, dodgeDV, dodgeDVWithSpecialty);
-        encoder.addComment(graphics, dodgeSpecialtyLabel, 1);
+  private DBTCombatStatsContent createContent(ReportSession session) {
+    return session.createContent(DBTCombatStatsContent.class);
+  }
+  
+  private void displayDodgeWithSpecialty( SheetGraphics graphics, LabelledValueEncoder encoder, CombatStatsContent content ) {
+      if( content.getDodgeDv() != content.getDodgeDvWithSpecialty() ) {
+          encoder.addLabelledValue(graphics, 1, content.getDodgeLabel(), content.getDodgeDv(), content.getDodgeDvWithSpecialty());
+          encoder.addComment(graphics, content.getDodgeSpecialtyLabel(), 1);
       } else {
-        encoder.addLabelledValue(graphics, 1, dodgeLabel, dodgeDV);
-      }
+          encoder.addLabelledValue(graphics, 1, content.getDodgeLabel(), content.getDodgeDv());
+      }     
   }
 }

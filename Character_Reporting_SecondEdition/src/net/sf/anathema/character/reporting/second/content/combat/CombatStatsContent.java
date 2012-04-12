@@ -16,7 +16,7 @@ public class CombatStatsContent extends AbstractCombatStatsContent {
 
   private HighestSpecialty dodgeSpecialty;
 
-  protected CombatStatsContent(IGenericCharacter character, IResources resources) {
+  public CombatStatsContent(IGenericCharacter character, IResources resources) {
     super(resources, character);
     dodgeSpecialty = new HighestSpecialty( character, AbilityType.Dodge );
   }
